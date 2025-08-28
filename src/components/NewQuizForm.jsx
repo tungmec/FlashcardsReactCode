@@ -3,6 +3,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import ROUTES from "../app/routes";
+import { selectTopics } from "../features/topics/topicsSlice";
+import { addQuiz } from "../features/quizzes/quizzesSlice";
+import { addCard } from "../features/cards/cardsSlice";
+
 // import selectors
 
 export default function NewQuizForm() {
@@ -10,26 +14,37 @@ export default function NewQuizForm() {
   const [cards, setCards] = useState([]);
   const [topicId, setTopicId] = useState("");
   const navigate = useNavigate();
-  const topics = {};  // Replace with topics 
+  const topics = useSelector(selectTopics);  // Replace with topics 
   const dispatch = useDispatch();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (name.length === 0) {
-      return;
-    }
+    try { if (name.length === 0) {
+           return;
+         }
 
-    const cardIds = [];
-
-    // create the new cards here and add each card's id to cardIds
+    const cardIds = cards.map((card) => {
+      const cardId = uuidv4();
+      dispatch(addCard({id:cardId, front: card.front, back: card.back}));
+     
+      return cardId;
+    });
     // create the new quiz here
 
-    const quizId = uuidv4();
+    const newQuiz = {id:uuidv4(), name: name, topicId: topicId, cardIds: cardIds};
+    
 
     // dispatch add quiz action 
-
+    dispatch(addQuiz(newQuiz));
     navigate(ROUTES.quizzesRoute())
-  };
+  } catch (err) {
+  console.error("Create quiz error:", err);
+  const msg =
+    (err && typeof err === "object" && "message" in err && err.message) ||
+    (typeof err === "string" ? err : JSON.stringify(err));
+  alert(`err: ${msg}`);
+}
+  } ;
 
   const addCardInputs = (e) => {
     e.preventDefault();
@@ -90,6 +105,7 @@ export default function NewQuizForm() {
             />
 
             <button
+              type="button"
               onClick={(e) => removeCard(e, index)}
               className="remove-card-button"
             >
@@ -98,7 +114,7 @@ export default function NewQuizForm() {
           </div>
         ))}
         <div className="actions-container">
-          <button onClick={addCardInputs}>Add a Card</button>
+          <button type="button" onClick={addCardInputs}>Add a Card</button>
           <button type="submit">Create Quiz</button>
         </div>
       </form>
